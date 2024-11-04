@@ -3,108 +3,83 @@ package com.example.lab13
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.with
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.example.lab13.ui.theme.Lab13Theme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            AnimationExamples()
+            Lab13Theme {
+                AnimatedContentExample()
+            }
         }
     }
 }
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun AnimationExamples() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .wrapContentSize(Alignment.Center)
-    ) {
-        // Ejercicio 1: Animación de Color
-        var isBlue by remember { mutableStateOf(true) }
-        val backgroundColor = animateColorAsState(if (isBlue) Color.Blue else Color.Red)
+fun AnimatedContentExample() {
+    var state by remember { mutableStateOf<ContentState>(ContentState.Loading) }
 
-        Button(onClick = { isBlue = !isBlue }) {
-            Text("Cambiar Color")
+    Column {
+        // AnimatedContent to switch between states
+        AnimatedContent(
+            targetState = state,
+            transitionSpec = {
+                fadeIn(animationSpec = tween(500)) with fadeOut(animationSpec = tween(500))
+            }
+        ) { targetState ->
+            when (targetState) {
+                ContentState.Loading -> {
+                    Text(text = "Cargando...", modifier = Modifier.padding(16.dp))
+                }
+                ContentState.Content -> {
+                    Text(text = "Contenido cargado con éxito!", modifier = Modifier.padding(16.dp))
+                }
+                ContentState.Error -> {
+                    Text(text = "Ha ocurrido un error!", modifier = Modifier.padding(16.dp))
+                }
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Box(
-            modifier = Modifier
-                .size(100.dp)
-                .background(backgroundColor.value)
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Ejercicio 2: Animación de Visibilidad
-        var isVisible by remember { mutableStateOf(true) }
-
-        Button(onClick = { isVisible = !isVisible }) {
-            Text("Toggle Visibilidad")
+        // Buttons to change the state
+        Button(onClick = { state = ContentState.Loading }) {
+            Text("Cargar")
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        AnimatedVisibility(visible = isVisible) {
-            Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .background(Color.Green)
-            )
+        Button(onClick = { state = ContentState.Content }) {
+            Text("Mostrar Contenido")
         }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Ejercicio 3: Animación de Tamaño y Posición
-        var size by remember { mutableStateOf(100.dp) }
-        var offsetX by remember { mutableStateOf(0.dp) }
-        var offsetY by remember { mutableStateOf(0.dp) }
-
-        val animatedSize: Dp by animateDpAsState(targetValue = size)
-        val animatedOffsetX: Dp by animateDpAsState(targetValue = offsetX)
-        val animatedOffsetY: Dp by animateDpAsState(targetValue = offsetY)
-
-        Button(onClick = {
-            size = if (size == 100.dp) 200.dp else 100.dp
-            offsetX = if (offsetX == 0.dp) 100.dp else 0.dp
-            offsetY = if (offsetY == 0.dp) 100.dp else 0.dp
-        }) {
-            Text("Mover y Cambiar Tamaño")
+        Button(onClick = { state = ContentState.Error }) {
+            Text("Mostrar Error")
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Box(
-            modifier = Modifier
-                .size(animatedSize)
-                .offset(animatedOffsetX, animatedOffsetY)
-                .background(Color.Blue)
-        )
     }
+}
+
+// Define the states
+sealed class ContentState {
+    object Loading : ContentState()
+    object Content : ContentState()
+    object Error : ContentState()
 }
 
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
-    AnimationExamples()
+    Lab13Theme {
+        AnimatedContentExample()
+    }
 }
