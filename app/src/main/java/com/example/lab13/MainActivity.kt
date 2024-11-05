@@ -3,28 +3,27 @@ package com.example.lab13
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.with
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.lab13.ui.theme.Lab13Theme
 
+@OptIn(ExperimentalAnimationApi::class)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             Lab13Theme {
-                AnimatedContentExample()
+                CombinedAnimationsScreen()
             }
         }
     }
@@ -32,54 +31,62 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun AnimatedContentExample() {
-    var state by remember { mutableStateOf<ContentState>(ContentState.Loading) }
+fun CombinedAnimationsScreen() {
+    var sizeState by remember { mutableStateOf(100.dp) }
+    var colorState by remember { mutableStateOf(Color.Red) }
+    var showButton by remember { mutableStateOf(true) }
+    var isDarkMode by remember { mutableStateOf(false) }
 
-    Column {
-        // AnimatedContent to switch between states
-        AnimatedContent(
-            targetState = state,
-            transitionSpec = {
-                fadeIn(animationSpec = tween(500)) with fadeOut(animationSpec = tween(500))
+    val animatedSize by animateDpAsState(
+        targetValue = sizeState,
+        animationSpec = tween(durationMillis = 500)
+    )
+    val animatedColor by animateColorAsState(
+        targetValue = colorState,
+        animationSpec = tween(durationMillis = 500)
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(if (isDarkMode) Color.DarkGray else Color.White),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            // Elemento que cambia de tamaño y color al hacer clic
+            Box(
+                modifier = Modifier
+                    .size(animatedSize)
+                    .background(animatedColor, shape = CircleShape)
+                    .clickable {
+                        sizeState = if (sizeState == 100.dp) 150.dp else 100.dp
+                        colorState = if (colorState == Color.Red) Color.Blue else Color.Red
+                    }
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Botón que se desplaza y desaparece usando AnimatedVisibility
+            AnimatedVisibility(
+                visible = showButton,
+                enter = slideInVertically() + fadeIn(),
+                exit = slideOutVertically() + fadeOut()
+            ) {
+                Button(onClick = { showButton = false }) {
+                    Text("Desplazar y Ocultar")
+                }
             }
-        ) { targetState ->
-            when (targetState) {
-                ContentState.Loading -> {
-                    Text(text = "Cargando...", modifier = Modifier.padding(16.dp))
-                }
-                ContentState.Content -> {
-                    Text(text = "Contenido cargado con éxito!", modifier = Modifier.padding(16.dp))
-                }
-                ContentState.Error -> {
-                    Text(text = "Ha ocurrido un error!", modifier = Modifier.padding(16.dp))
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Transición de contenido entre modo claro y oscuro
+            AnimatedContent(targetState = isDarkMode, transitionSpec = {
+                fadeIn(animationSpec = tween(700)) with fadeOut(animationSpec = tween(700))
+            }) { targetState ->
+                Button(onClick = { isDarkMode = !isDarkMode }) {
+                    Text(if (targetState) "Modo Claro" else "Modo Oscuro")
                 }
             }
         }
-
-        // Buttons to change the state
-        Button(onClick = { state = ContentState.Loading }) {
-            Text("Cargar")
-        }
-        Button(onClick = { state = ContentState.Content }) {
-            Text("Mostrar Contenido")
-        }
-        Button(onClick = { state = ContentState.Error }) {
-            Text("Mostrar Error")
-        }
-    }
-}
-
-// Define the states
-sealed class ContentState {
-    object Loading : ContentState()
-    object Content : ContentState()
-    object Error : ContentState()
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    Lab13Theme {
-        AnimatedContentExample()
     }
 }
